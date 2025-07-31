@@ -1,0 +1,14 @@
+{
+  "name": "discord-role-bot",
+  "version": "1.0.0",
+  "description": "Discord role picker bot with 5 dropdown categories",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "express": "^4.19.2"
+  }
+}
