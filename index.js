@@ -3,35 +3,31 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot Aktif!'));
 app.listen(3000, () => console.log('🌐 Web server aktif untuk anti-sleep'));
 
-const { 
-  Client, 
-  GatewayIntentBits, 
-  ActionRowBuilder, 
-  StringSelectMenuBuilder, 
-  StringSelectMenuOptionBuilder,
-  Events,
-  Partials 
-} = require('discord.js');
+const { Client, GatewayIntentBits, Events, Partials } = require('discord.js');
 require('dotenv').config();
 
+// 🔹 DEBUG: tampilkan semua Environment Variables yang terbaca
+console.log("🔍 Environment Variables yang terbaca:");
+Object.keys(process.env).forEach(key => {
+  if (key === 'DISCORD_TOKEN') {
+    console.log(`- ${key}: [TOKEN TERDETEKSI]`);
+  } else if (key === 'CHANNEL_ID') {
+    console.log(`- ${key}: ${process.env[key]}`);
+  } else {
+    // tampilkan variable lain untuk debug
+    console.log(`- ${key}`);
+  }
+});
+
 const token = process.env.DISCORD_TOKEN;
-if (!token) {
-  console.error('❌ DISCORD_TOKEN tidak terbaca! Pastikan variable sudah di-set di Railway.');
-} else {
-  console.log('ℹ️ Token terbaca dengan panjang:', token.length, '(***' + token.slice(-5) + ')');
-}
-
 const channelId = process.env.CHANNEL_ID;
-if (!channelId) {
-  console.error('❌ CHANNEL_ID tidak terbaca! Pastikan variable sudah di-set di Railway.');
-}
 
-// Data roles contoh
-const weatherRoles = [{ label: "🌧️ Rain", roleName: "Rain" }];
-const seedRoles = [];
-const gearRoles = [];
-const merchantRoles = [{ label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" }];
-const eventRoles = [{ label: "🎉 Event Ping", roleName: "event" }];
+if (!token) {
+  console.error('❌ DISCORD_TOKEN tidak terbaca!');
+}
+if (!channelId) {
+  console.error('❌ CHANNEL_ID tidak terbaca!');
+}
 
 const client = new Client({
   intents: [
@@ -50,8 +46,8 @@ client.once(Events.ClientReady, async () => {
       console.error('❌ Channel tidak ditemukan');
       return;
     }
-    await channel.send({ content: '**Bot aktif! Pilih role di dropdown.**' });
-    console.log('✅ Dropdown dikirim ke channel!');
+    await channel.send('**Bot debug aktif!**');
+    console.log('✅ Pesan debug dikirim ke channel!');
   } catch (e) {
     console.error('❌ Error fetch channel:', e.message);
   }
