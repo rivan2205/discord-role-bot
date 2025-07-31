@@ -1,7 +1,7 @@
 {
   "name": "discord-role-bot",
-  "version": "1.1.0",
-  "description": "Discord role picker bot - Railway version",
+  "version": "2.0.0",
+  "description": "Discord role bot dengan dropdown dan sistem reputasi + leaderboard",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
