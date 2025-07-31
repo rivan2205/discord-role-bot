@@ -167,17 +167,17 @@ client.on(Events.MessageCreate, async (message) => {
     return message.reply(`📊 Reputasi ${target.username}: **${rep}**`);
   }
 
-  // !board (leaderboard)
+  // !board (leaderboard top 50)
   if (message.content.startsWith("!board")) {
     if (Object.keys(repData).length === 0) return message.reply("📊 Belum ada data reputasi.");
-    const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 30); // tampilkan 30 teratas
+    const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 50); // tampilkan 50 teratas
     const leaderboard = await Promise.all(
       sorted.map(async ([id, rep], i) => {
         const user = await client.users.fetch(id);
         return `${i + 1}. **${user.username}** - ${rep} rep`;
       })
     );
-    message.reply(`🏆 **Top 30 Reputasi:**\n${leaderboard.join("\n")}`);
+    message.reply(`🏆 **Top 50 Reputasi:**\n${leaderboard.join("\n")}`);
   }
 });
 
