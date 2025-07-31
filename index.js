@@ -18,7 +18,7 @@ require('dotenv').config();
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 
-// Data roles per kategori (ringkas)
+// === Role Options ===
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
@@ -86,7 +86,7 @@ const eventRoles = [
   { label: "🎉 Event Ping", roleName: "event" },
 ];
 
-// Client
+// === Client Discord ===
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   partials: [Partials.Channel],
@@ -102,7 +102,6 @@ client.once(Events.ClientReady, async () => {
       return;
     }
 
-    // Buat dropdown per kategori
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
         .setCustomId(id)
@@ -120,7 +119,6 @@ client.once(Events.ClientReady, async () => {
       return new ActionRowBuilder().addComponents(menu);
     };
 
-    // Kirim dropdown 5 kategori
     await channel.send({
       content: "**Pilih role sesuai kategori:**",
       components: [
@@ -138,37 +136,53 @@ client.once(Events.ClientReady, async () => {
   }
 });
 
-// Handler role saat user pilih menu
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
-  let roles = [];
-  if (interaction.customId === "select_weather") roles = weatherRoles;
-  if (interaction.customId === "select_seed") roles = seedRoles;
-  if (interaction.customId === "select_gear") roles = gearRoles;
-  if (interaction.customId === "select_merchant") roles = merchantRoles;
-  if (interaction.customId === "select_event") roles = eventRoles;
+  const mapping = {
+    select_weather: weatherRoles,
+    select_seed: seedRoles,
+    select_gear: gearRoles,
+    select_merchant: merchantRoles,
+    select_event: eventRoles,
+  };
+
+  const roles = mapping[interaction.customId];
+  if (!roles) return;
 
   const member = interaction.member;
   const selected = interaction.values;
 
-  for (const roleObj of roles) {
-    const role = interaction.guild.roles.cache.find(
-      (r) => r.name === roleObj.roleName
-    );
-    if (!role) continue;
-
-    if (selected.includes(roleObj.roleName)) {
-      if (!member.roles.cache.has(role.id)) await member.roles.add(role);
-    } else {
-      if (member.roles.cache.has(role.id)) await member.roles.remove(role);
-    }
+  if (!interaction.guild || !member) {
+    return interaction.reply({ content: "⚠️ Error: Tidak dapat membaca member atau server.", ephemeral: true });
   }
 
-  await interaction.reply({
-    content: "✅ Role kamu diperbarui!",
-    flags: 64, // ephemeral
-  });
+  try {
+    for (const roleObj of roles) {
+      const role = interaction.guild.roles.cache.find(
+        (r) => r.name.toLowerCase() === roleObj.roleName.toLowerCase()
+      );
+      if (!role) {
+        console.warn(`⚠️ Role tidak ditemukan: ${roleObj.roleName}`);
+        continue;
+      }
+
+      if (selected.includes(roleObj.roleName)) {
+        if (!member.roles.cache.has(role.id)) await member.roles.add(role);
+      } else {
+        if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+      }
+    }
+
+    await interaction.reply({
+      content: "✅ Role kamu diperbarui!",
+      ephemeral: true,
+    });
+
+  } catch (err) {
+    console.error("❌ Gagal memperbarui role:", err);
+    await interaction.reply({ content: "❌ Terjadi kesalahan saat memperbarui role.", ephemeral: true });
+  }
 });
 
 client.login(token);
