@@ -167,8 +167,8 @@ client.on(Events.MessageCreate, async (message) => {
     return message.reply(`📊 Reputasi ${target.username}: **${rep}**`);
   }
 
-  // !leaderboard
-  if (message.content.startsWith("!board")) {
+  // !board
+  if (message.content.startsWith("!leaderboard")) {
     if (Object.keys(repData).length === 0) return message.reply("📊 Belum ada data reputasi.");
     const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const leaderboard = await Promise.all(
