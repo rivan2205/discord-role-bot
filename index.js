@@ -1,10 +1,8 @@
-// Anti-sleep server
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot Aktif!'));
 app.listen(3000, () => console.log('🌐 Web server aktif untuk anti-sleep'));
 
-// Discord client setup
 const {
   Client,
   GatewayIntentBits,
@@ -20,9 +18,7 @@ require('dotenv').config();
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 
-// === DATA ROLE PER KATEGORI ===
-
-// Weather
+// Data roles per kategori
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
@@ -34,7 +30,7 @@ const weatherRoles = [
   { label: "🌡️ Heatwave", roleName: "heatwave" },
   { label: "🌪️ Tornado", roleName: "tornado" },
   { label: "🍫🌧️ Chocolate Rain", roleName: "chocolate rain" },
-  { label: "Aurora Event", roleName: "Aurora Event" },
+  { label: "Aurora Event", roleName: "Aurora event" },
   { label: "🌦️ Tropical Rain", roleName: "tropicalrain" },
   { label: "🌪️ Sandstorm", roleName: "sandstorm" },
   { label: "👑 Admin Abuse", roleName: "adminabuse" },
@@ -43,7 +39,6 @@ const weatherRoles = [
   { label: "💥 Corrupt Zenaura", roleName: "corruptzenaura" },
 ];
 
-// Seed
 const seedRoles = [
   { label: "🍉 Watermelon", roleName: "Watermelon" },
   { label: "🎃 Pumpkin", roleName: "pumpkin" },
@@ -65,7 +60,6 @@ const seedRoles = [
   { label: "🍓 Elderstrawberry", roleName: "elderstrawberry" },
 ];
 
-// Gear
 const gearRoles = [
   { label: "💦 Master Sprinkler", roleName: "Master Sprinkler" },
   { label: "💦 Advanced Sprinkler", roleName: "Advanced Sprinkler" },
@@ -84,20 +78,21 @@ const gearRoles = [
   { label: "🔧 Recall Wrench", roleName: "recallwrench" },
 ];
 
-// Merchant & Event
 const merchantRoles = [
-  { label: "🧙‍♂️ Traveling Merchant", roleName: "Traveling Merchant" },
+  { label: "🧙‍♂️ Traveling Merchant", roleName: "🧙‍♂️traveling merchant" },
 ];
+
 const eventRoles = [
   { label: "🎉 Event Ping", roleName: "Event Ping" },
 ];
 
-// === DISCORD CLIENT ===
+// Client setup
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   partials: [Partials.Channel],
 });
 
+// Saat bot siap
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot aktif sebagai ${client.user.tag}`);
 
@@ -105,7 +100,6 @@ client.once(Events.ClientReady, async () => {
     const channel = await client.channels.fetch(channelId);
     if (!channel) return console.error("❌ Channel tidak ditemukan!");
 
-    // Kirim dropdown
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
         .setCustomId(id)
@@ -113,11 +107,12 @@ client.once(Events.ClientReady, async () => {
         .setMinValues(0)
         .setMaxValues(roles.length);
 
-      roles.forEach((role) =>
-        menu.addOptions(
-          new StringSelectMenuOptionBuilder().setLabel(role.label).setValue(role.roleName)
-        )
-      );
+      roles.forEach(role => {
+        menu.addOptions(new StringSelectMenuOptionBuilder()
+          .setLabel(role.label)
+          .setValue(role.roleName));
+      });
+
       return new ActionRowBuilder().addComponents(menu);
     };
 
@@ -132,55 +127,59 @@ client.once(Events.ClientReady, async () => {
       ],
     });
 
-    console.log("✅ Dropdown role berhasil dikirim.");
+    console.log("✅ Dropdown role sudah dikirim!");
   } catch (err) {
     console.error("❌ Gagal kirim dropdown:", err.message);
   }
 });
 
-// Handle dropdown interaction
+// Handle Interaction (dropdown)
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
-  const mapping = {
-    select_weather: weatherRoles,
-    select_seed: seedRoles,
-    select_gear: gearRoles,
-    select_merchant: merchantRoles,
-    select_event: eventRoles,
-  };
-
-  const roles = mapping[interaction.customId];
-  if (!roles) return;
+  let roles = [];
+  if (interaction.customId === "select_weather") roles = weatherRoles;
+  if (interaction.customId === "select_seed") roles = seedRoles;
+  if (interaction.customId === "select_gear") roles = gearRoles;
+  if (interaction.customId === "select_merchant") roles = merchantRoles;
+  if (interaction.customId === "select_event") roles = eventRoles;
 
   const member = interaction.member;
   const selected = interaction.values;
 
-  try {
-    for (const roleObj of roles) {
-      const role = interaction.guild.roles.cache.find(
-        (r) => r.name.toLowerCase() === roleObj.roleName.toLowerCase()
-      );
-      if (!role) continue;
+  // Proses paralel
+  const promises = roles.map(async (roleObj) => {
+    const role = interaction.guild.roles.cache.find(
+      (r) => r.name.toLowerCase() === roleObj.roleName.toLowerCase()
+    );
+    if (!role) return;
 
-      try {
-        if (selected.includes(roleObj.roleName)) {
-          if (!member.roles.cache.has(role.id)) await member.roles.add(role);
-        } else {
-          if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+    try {
+      if (selected.includes(roleObj.roleName)) {
+        if (!member.roles.cache.has(role.id)) {
+          await member.roles.add(role);
         }
-      } catch (roleErr) {
-        console.warn(`⚠️ Tidak bisa ubah role ${roleObj.roleName}:`, roleErr.message);
+      } else {
+        if (member.roles.cache.has(role.id)) {
+          await member.roles.remove(role);
+        }
       }
+    } catch (err) {
+      console.warn(`⚠️ Gagal ubah role ${roleObj.roleName}:`, err.message);
     }
+  });
 
-    await interaction.reply({ content: "✅ Role kamu diperbarui!", ephemeral: true });
-  } catch (err) {
-    console.error("❌ ERROR:", err.message);
-    if (!interaction.replied) {
-      await interaction.reply({ content: "❌ Gagal memproses permintaan.", ephemeral: true });
-    }
-  }
+  await Promise.allSettled(promises);
+
+  await interaction.reply({
+    content: "✅ Role kamu diperbarui!",
+    ephemeral: true
+  });
+});
+
+// Anti crash (prevent Railway restart)
+process.on('unhandledRejection', (reason, p) => {
+  console.error('💥 Unhandled Rejection:', reason);
 });
 
 client.login(token);
