@@ -18,7 +18,7 @@ require('dotenv').config();
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 
-// Data roles per kategori
+// Daftar Role
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
@@ -86,6 +86,7 @@ const eventRoles = [
   { label: "🎉 Event Ping", roleName: "Event Ping" }
 ];
 
+// Client Discord
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   partials: [Partials.Channel]
@@ -96,7 +97,10 @@ client.once(Events.ClientReady, async () => {
 
   try {
     const channel = await client.channels.fetch(channelId);
-    if (!channel) return console.error("❌ Channel tidak ditemukan!");
+    if (!channel) {
+      console.error("❌ Channel tidak ditemukan!");
+      return;
+    }
 
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
@@ -105,14 +109,13 @@ client.once(Events.ClientReady, async () => {
         .setMinValues(0)
         .setMaxValues(roles.length);
 
-      roles.forEach(role =>
+      roles.forEach((role) =>
         menu.addOptions(
           new StringSelectMenuOptionBuilder()
             .setLabel(role.label)
             .setValue(role.roleName)
         )
       );
-
       return new ActionRowBuilder().addComponents(menu);
     };
 
@@ -129,47 +132,48 @@ client.once(Events.ClientReady, async () => {
 
     console.log("✅ Dropdown role sudah dikirim!");
   } catch (err) {
-    console.error("❌ Error kirim dropdown:", err.message);
+    console.error("❌ Gagal kirim dropdown:", err.message);
   }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
-  const roleMap = {
-    select_weather: weatherRoles,
-    select_seed: seedRoles,
-    select_gear: gearRoles,
-    select_merchant: merchantRoles,
-    select_event: eventRoles
-  };
-
-  const roles = roleMap[interaction.customId];
-  if (!roles) return;
-
-  const member = interaction.member;
-  const selected = interaction.values;
-
   try {
+    await interaction.deferReply({ ephemeral: true });
+
+    let roles = [];
+    if (interaction.customId === "select_weather") roles = weatherRoles;
+    if (interaction.customId === "select_seed") roles = seedRoles;
+    if (interaction.customId === "select_gear") roles = gearRoles;
+    if (interaction.customId === "select_merchant") roles = merchantRoles;
+    if (interaction.customId === "select_event") roles = eventRoles;
+
+    const member = interaction.member;
+    const selected = interaction.values;
+
     for (const roleObj of roles) {
-      const role = interaction.guild.roles.cache.find(r => r.name === roleObj.roleName);
+      const role = interaction.guild.roles.cache.find((r) => r.name === roleObj.roleName);
       if (!role) continue;
 
-      if (selected.includes(roleObj.roleName)) {
-        if (!member.roles.cache.has(role.id)) await member.roles.add(role);
-      } else {
-        if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+      try {
+        if (selected.includes(roleObj.roleName)) {
+          if (!member.roles.cache.has(role.id)) await member.roles.add(role);
+        } else {
+          if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+        }
+      } catch (roleErr) {
+        console.error(`❌ Gagal atur role ${roleObj.roleName}:`, roleErr.message);
       }
     }
 
-    await interaction.reply({
-      content: "✅ Role kamu diperbarui!",
-      ephemeral: true
-    });
+    await interaction.editReply("✅ Role kamu berhasil diperbarui!");
   } catch (err) {
-    console.error("❌ Error saat memperbarui role:", err.message);
-    if (!interaction.replied) {
-      await interaction.reply({ content: "❌ Terjadi kesalahan saat memperbarui role.", ephemeral: true });
+    console.error("❌ Gagal proses interaksi:", err.message);
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply("❌ Terjadi kesalahan saat mengatur role.");
+    } else {
+      await interaction.reply({ content: "❌ Terjadi kesalahan saat mengatur role.", ephemeral: true });
     }
   }
 });
