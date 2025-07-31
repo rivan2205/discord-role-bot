@@ -1,21 +1,11 @@
 {
   "name": "discord-role-bot",
   "version": "1.0.0",
-  "description": "Bot Discord untuk memilih role Grow a Garden Indonesia menggunakan dropdown.",
+  "description": "Bot Discord untuk dropdown role Grow a Garden Indonesia",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "discord",
-    "bot",
-    "role",
-    "dropdown",
-    "growagarden",
-    "community"
-  ],
-  "author": "GAG Indonesia Team",
-  "license": "MIT",
   "dependencies": {
     "discord.js": "^14.11.0",
     "dotenv": "^17.2.1",
