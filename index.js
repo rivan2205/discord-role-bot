@@ -1,24 +1,8 @@
-const express = require('express');
-const app = express();
-app.get('/', (req, res) => res.send('Bot Aktif!'));
-app.listen(3000, () => console.log('🌐 Web server aktif untuk anti-sleep'));
-
-const {
-  Client,
-  GatewayIntentBits,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
-  Events,
-  Partials
-} = require('discord.js');
-
-require('dotenv').config();
+// ... bagian atas tetap sama (express dan require)
 
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 
-// === Role Options ===
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
@@ -30,7 +14,7 @@ const weatherRoles = [
   { label: "🌡️ Heatwave", roleName: "heatwave" },
   { label: "🌪️ Tornado", roleName: "tornado" },
   { label: "🍫🌧️ Chocolate Rain", roleName: "chocolate rain" },
-  { label: "Aurora Event", roleName: "Aurora event" },
+  { label: "Aurora Event", roleName: "Aurora Event" },
   { label: "🌦️ Tropical Rain", roleName: "tropicalrain" },
   { label: "🌪️ Sandstorm", roleName: "sandstorm" },
   { label: "👑 Admin Abuse", roleName: "adminabuse" },
@@ -39,102 +23,16 @@ const weatherRoles = [
   { label: "💥 Corrupt Zenaura", roleName: "corruptzenaura" },
 ];
 
-const seedRoles = [
-  { label: "🍉 Watermelon", roleName: "Watermelon" },
-  { label: "🎃 Pumpkin", roleName: "pumpkin" },
-  { label: "🍎 Apple", roleName: "Apple" },
-  { label: "🎋 Bamboo", roleName: "bamboo" },
-  { label: "🥥 Coconut", roleName: "coconut" },
-  { label: "🌵 Cactus", roleName: "cactus" },
-  { label: "🍠 Dragonfruit", roleName: "dragonfruit" },
-  { label: "🥭 Mango", roleName: "mango" },
-  { label: "🍇 Grape", roleName: "grape" },
-  { label: "🍄 Mushroom", roleName: "mushroom" },
-  { label: "🌶️ Bell Pepper", roleName: "bell pepper" },
-  { label: "🟤 Cacao", roleName: "cacao" },
-  { label: "🥒 Beanstalk", roleName: "beanstalk" },
-  { label: "🏵️ Emberlily", roleName: "emberlily" },
-  { label: "🍎 Sugar Apple", roleName: "sugar apple" },
-  { label: "🏵️ Burningbud", roleName: "burningbud" },
-  { label: "🌲 Giant Pinecone", roleName: "giantpinecone" },
-  { label: "🍓 Elderstrawberry", roleName: "elderstrawberry" },
-];
-
-const gearRoles = [
-  { label: "💦 Master Sprinkler", roleName: "Master Sprinkler" },
-  { label: "💦 Advanced Sprinkler", roleName: "Advanced Sprinkler" },
-  { label: "💦 Godly Sprinkler", roleName: "Godly Sprinkler" },
-  { label: "🚿 Wateringcan", roleName: "wateringcan" },
-  { label: "⛏️ Trowel", roleName: "trowel" },
-  { label: "💦 Basic Sprinkler", roleName: "basic sprinkler" },
-  { label: "Friendship Pot", roleName: "Friendship pot" },
-  { label: "❤️ Favorite Tool", roleName: "favorite tool" },
-  { label: "🪞 Tanning Mirror", roleName: "tanning mirror" },
-  { label: "Cleaning Spray", roleName: "Cleaning spray" },
-  { label: "🔎 Magnifying Glass", roleName: "magnify glass" },
-  { label: "🧸 Medium Toy", roleName: "mediumtoy" },
-  { label: "🦴 Medium Treat", roleName: "mediumtreat" },
-  { label: "🍭 Level Up Lollipop", roleName: "leveluplollipop" },
-  { label: "🔧 Recall Wrench", roleName: "recallwrench" },
-];
-
+const seedRoles = [/* tetap sama */];
+const gearRoles = [/* tetap sama */];
 const merchantRoles = [
-  { label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" },
+  { label: "🧙‍♂️ Traveling Merchant", roleName: "Traveling Merchant" }, // perbaikan di sini
 ];
-
 const eventRoles = [
-  { label: "🎉 Event Ping", roleName: "event" },
+  { label: "🎉 Event Ping", roleName: "Event Ping" }, // perbaikan di sini
 ];
 
-// === Client Discord ===
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  partials: [Partials.Channel],
-});
-
-client.once(Events.ClientReady, async () => {
-  console.log(`✅ Bot aktif sebagai ${client.user.tag}`);
-
-  try {
-    const channel = await client.channels.fetch(channelId);
-    if (!channel) {
-      console.error("❌ Channel tidak ditemukan!");
-      return;
-    }
-
-    const makeDropdown = (id, placeholder, roles) => {
-      const menu = new StringSelectMenuBuilder()
-        .setCustomId(id)
-        .setPlaceholder(placeholder)
-        .setMinValues(0)
-        .setMaxValues(roles.length);
-
-      roles.forEach((role) =>
-        menu.addOptions(
-          new StringSelectMenuOptionBuilder()
-            .setLabel(role.label)
-            .setValue(role.roleName)
-        )
-      );
-      return new ActionRowBuilder().addComponents(menu);
-    };
-
-    await channel.send({
-      content: "**Pilih role sesuai kategori:**",
-      components: [
-        makeDropdown("select_weather", "🌦️ Weather", weatherRoles),
-        makeDropdown("select_seed", "🌱 Seed", seedRoles),
-        makeDropdown("select_gear", "⚙️ Gear", gearRoles),
-        makeDropdown("select_merchant", "🧙‍♂️ Merchant", merchantRoles),
-        makeDropdown("select_event", "🎉 Event", eventRoles),
-      ],
-    });
-
-    console.log("✅ Dropdown role sudah dikirim!");
-  } catch (err) {
-    console.error("❌ Error kirim dropdown:", err.message);
-  }
-});
+// ... client & dropdown tetap sama
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
@@ -154,7 +52,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const selected = interaction.values;
 
   if (!interaction.guild || !member) {
-    return interaction.reply({ content: "⚠️ Error: Tidak dapat membaca member atau server.", ephemeral: true });
+    return interaction.reply({ content: "⚠️ Tidak dapat membaca member/guild.", ephemeral: true });
   }
 
   try {
@@ -163,26 +61,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
         (r) => r.name.toLowerCase() === roleObj.roleName.toLowerCase()
       );
       if (!role) {
-        console.warn(`⚠️ Role tidak ditemukan: ${roleObj.roleName}`);
+        console.warn(`❗ Role tidak ditemukan: ${roleObj.roleName}`);
         continue;
       }
 
-      if (selected.includes(roleObj.roleName)) {
-        if (!member.roles.cache.has(role.id)) await member.roles.add(role);
-      } else {
-        if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+      try {
+        if (selected.includes(roleObj.roleName)) {
+          if (!member.roles.cache.has(role.id)) await member.roles.add(role);
+        } else {
+          if (member.roles.cache.has(role.id)) await member.roles.remove(role);
+        }
+      } catch (roleErr) {
+        console.error(`❌ Gagal ubah role: ${role.name}`, roleErr.message);
       }
     }
 
-    await interaction.reply({
-      content: "✅ Role kamu diperbarui!",
-      ephemeral: true,
-    });
+    await interaction.reply({ content: "✅ Role kamu diperbarui!", ephemeral: true });
 
   } catch (err) {
-    console.error("❌ Gagal memperbarui role:", err);
-    await interaction.reply({ content: "❌ Terjadi kesalahan saat memperbarui role.", ephemeral: true });
+    console.error("❌ ERROR GLOBAL:", err.message);
+    if (!interaction.replied) {
+      interaction.reply({ content: "❌ Terjadi kesalahan saat memperbarui role.", ephemeral: true });
+    }
   }
 });
-
-client.login(token);
