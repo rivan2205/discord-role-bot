@@ -1,108 +1,70 @@
-const express = require('express');
-const app = express();
-app.get('/', (req, res) => res.send('Bot Aktif!'));
-app.listen(3000, () => console.log('🌐 Web server aktif untuk anti-sleep'));
-
+const fs = require("fs");
+const express = require("express");
 const {
   Client,
   GatewayIntentBits,
+  Events,
+  Partials,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
-  Events,
-  Partials
-} = require('discord.js');
+  StringSelectMenuOptionBuilder
+} = require("discord.js");
+require("dotenv").config();
 
-require('dotenv').config();
-
+// Load ENV
 const token = process.env.DISCORD_TOKEN;
-const channelId = process.env.CHANNEL_ID;
+const channelId = process.env.CHANNEL_ID; // dropdown
+const repChannelId = process.env.REP_CHANNEL_ID; // reputasi
+const trustedRoleName = process.env.TRUSTED_ROLE_NAME || "Trusted Seller";
+const repFile = "data.json";
 
-// Data roles per kategori (ringkas)
+// Data reputasi
+let repData = {};
+if (fs.existsSync(repFile)) {
+  repData = JSON.parse(fs.readFileSync(repFile));
+}
+
+// Express untuk anti-sleep
+const app = express();
+app.get("/", (req, res) => res.send("Bot Aktif!"));
+app.listen(3000, () => console.log("🌐 Web server aktif untuk anti-sleep"));
+
+// Client Discord
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ],
+  partials: [Partials.Channel]
+});
+
+// Data dropdown role
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
-  { label: "⛈️ Thunder", roleName: "Thunder" },
-  { label: "☄️ Meteor Shower", roleName: "meteor shower" },
-  { label: "🔴 Bloodmoon", roleName: "bloodmoon" },
-  { label: "🔵 Night", roleName: "night" },
-  { label: "💨 Windy", roleName: "windy" },
-  { label: "🌡️ Heatwave", roleName: "heatwave" },
-  { label: "🌪️ Tornado", roleName: "tornado" },
-  { label: "🍫🌧️ Chocolate Rain", roleName: "chocolate rain" },
-  { label: "Aurora Event", roleName: "Aurora event" },
-  { label: "🌦️ Tropical Rain", roleName: "tropicalrain" },
-  { label: "🌪️ Sandstorm", roleName: "sandstorm" },
-  { label: "👑 Admin Abuse", roleName: "adminabuse" },
-  { label: "💠 Zenaura", roleName: "zenaura" },
-  { label: "💎 Crystalbeam", roleName: "crystalbeam" },
-  { label: "💥 Corrupt Zenaura", roleName: "corruptzenaura" },
+  { label: "⛈️ Thunder", roleName: "Thunder" }
 ];
+const seedRoles = [{ label: "🍉 Watermelon", roleName: "Watermelon" }];
+const gearRoles = [{ label: "💦 Master Sprinkler", roleName: "Master Sprinkler" }];
+const merchantRoles = [{ label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" }];
+const eventRoles = [{ label: "🎉 Event Ping", roleName: "event" }];
 
-const seedRoles = [
-  { label: "🍉 Watermelon", roleName: "Watermelon" },
-  { label: "🎃 Pumpkin", roleName: "pumpkin" },
-  { label: "🍎 Apple", roleName: "Apple" },
-  { label: "🎋 Bamboo", roleName: "bamboo" },
-  { label: "🥥 Coconut", roleName: "coconut" },
-  { label: "🌵 Cactus", roleName: "cactus" },
-  { label: "🍠 Dragonfruit", roleName: "dragonfruit" },
-  { label: "🥭 Mango", roleName: "mango" },
-  { label: "🍇 Grape", roleName: "grape" },
-  { label: "🍄 Mushroom", roleName: "mushroom" },
-  { label: "🌶️ Bell Pepper", roleName: "bell pepper" },
-  { label: "🟤 Cacao", roleName: "cacao" },
-  { label: "🥒 Beanstalk", roleName: "beanstalk" },
-  { label: "🏵️ Emberlily", roleName: "emberlily" },
-  { label: "🍎 Sugar Apple", roleName: "sugar apple" },
-  { label: "🏵️ Burningbud", roleName: "burningbud" },
-  { label: "🌲 Giant Pinecone", roleName: "giantpinecone" },
-  { label: "🍓 Elderstrawberry", roleName: "elderstrawberry" },
-];
+// Simpan reputasi ke file
+function saveRep() {
+  fs.writeFileSync(repFile, JSON.stringify(repData, null, 2));
+}
 
-const gearRoles = [
-  { label: "💦 Master Sprinkler", roleName: "Master Sprinkler" },
-  { label: "💦 Advanced Sprinkler", roleName: "Advanced Sprinkler" },
-  { label: "💦 Godly Sprinkler", roleName: "Godly Sprinkler" },
-  { label: "🚿 Wateringcan", roleName: "wateringcan" },
-  { label: "⛏️ Trowel", roleName: "trowel" },
-  { label: "💦 Basic Sprinkler", roleName: "basic sprinkler" },
-  { label: "Friendship Pot", roleName: "Friendship pot" },
-  { label: "❤️ Favorite Tool", roleName: "favorite tool" },
-  { label: "🪞 Tanning Mirror", roleName: "tanning mirror" },
-  { label: "Cleaning Spray", roleName: "Cleaning spray" },
-  { label: "🔎 Magnifying Glass", roleName: "magnify glass" },
-  { label: "🧸 Medium Toy", roleName: "mediumtoy" },
-  { label: "🦴 Medium Treat", roleName: "mediumtreat" },
-  { label: "🍭 Level Up Lollipop", roleName: "leveluplollipop" },
-  { label: "🔧 Recall Wrench", roleName: "recallwrench" },
-];
-
-const merchantRoles = [
-  { label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" },
-];
-
-const eventRoles = [
-  { label: "🎉 Event Ping", roleName: "event" },
-];
-
-// Client
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  partials: [Partials.Channel],
-});
-
+// Client ready
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot aktif sebagai ${client.user.tag}`);
 
   try {
     const channel = await client.channels.fetch(channelId);
-    if (!channel) {
-      console.error("❌ Channel tidak ditemukan!");
-      return;
-    }
+    if (!channel) return console.log("❌ Channel dropdown tidak ditemukan!");
 
-    // Buat dropdown per kategori
+    // Kirim dropdown
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
         .setCustomId(id)
@@ -111,16 +73,12 @@ client.once(Events.ClientReady, async () => {
         .setMaxValues(roles.length);
 
       roles.forEach((role) =>
-        menu.addOptions(
-          new StringSelectMenuOptionBuilder()
-            .setLabel(role.label)
-            .setValue(role.roleName)
-        )
+        menu.addOptions(new StringSelectMenuOptionBuilder().setLabel(role.label).setValue(role.roleName))
       );
+
       return new ActionRowBuilder().addComponents(menu);
     };
 
-    // Kirim dropdown 5 kategori
     await channel.send({
       content: "**Pilih role sesuai kategori:**",
       components: [
@@ -128,34 +86,35 @@ client.once(Events.ClientReady, async () => {
         makeDropdown("select_seed", "🌱 Seed", seedRoles),
         makeDropdown("select_gear", "⚙️ Gear", gearRoles),
         makeDropdown("select_merchant", "🧙‍♂️ Merchant", merchantRoles),
-        makeDropdown("select_event", "🎉 Event", eventRoles),
-      ],
+        makeDropdown("select_event", "🎉 Event", eventRoles)
+      ]
     });
 
-    console.log("✅ Dropdown role sudah dikirim!");
+    console.log("✅ Dropdown role terkirim!");
   } catch (err) {
-    console.error("❌ Error kirim dropdown:", err.message);
+    console.log("❌ Error kirim dropdown:", err.message);
   }
 });
 
-// Handler role saat user pilih menu
+// Handle dropdown role
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
-  let roles = [];
-  if (interaction.customId === "select_weather") roles = weatherRoles;
-  if (interaction.customId === "select_seed") roles = seedRoles;
-  if (interaction.customId === "select_gear") roles = gearRoles;
-  if (interaction.customId === "select_merchant") roles = merchantRoles;
-  if (interaction.customId === "select_event") roles = eventRoles;
+  const roles = {
+    select_weather: weatherRoles,
+    select_seed: seedRoles,
+    select_gear: gearRoles,
+    select_merchant: merchantRoles,
+    select_event: eventRoles
+  }[interaction.customId];
+
+  if (!roles) return;
 
   const member = interaction.member;
   const selected = interaction.values;
 
   for (const roleObj of roles) {
-    const role = interaction.guild.roles.cache.find(
-      (r) => r.name === roleObj.roleName
-    );
+    const role = interaction.guild.roles.cache.find((r) => r.name === roleObj.roleName);
     if (!role) continue;
 
     if (selected.includes(roleObj.roleName)) {
@@ -165,10 +124,61 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  await interaction.reply({
-    content: "✅ Role kamu diperbarui!",
-    flags: 64, // ephemeral
-  });
+  await interaction.reply({ content: "✅ Role kamu diperbarui!", flags: 64 });
+});
+
+// Handle reputasi
+client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot) return;
+
+  // hanya di channel reputasi
+  if (message.channel.id !== repChannelId) return;
+
+  // +rep
+  if (message.content.startsWith("+rep")) {
+    const target = message.mentions.users.first();
+    if (!target) return message.reply("⚠️ Gunakan: `+rep @username`");
+    if (target.id === message.author.id) return message.reply("❌ Tidak bisa +rep diri sendiri!");
+
+    repData[target.id] = (repData[target.id] || 0) + 1;
+    saveRep();
+
+    // Auto role Trusted Seller (≥30)
+    const guildMember = await message.guild.members.fetch(target.id);
+    const trustedRole = message.guild.roles.cache.find((r) => r.name === trustedRoleName);
+    if (trustedRole) {
+      if (repData[target.id] >= 30 && !guildMember.roles.cache.has(trustedRole.id)) {
+        await guildMember.roles.add(trustedRole);
+        message.reply(`✅ Reputasi ${target.username} sekarang **${repData[target.id]}**! 🎉 Dapat role **${trustedRoleName}**!`);
+      } else if (repData[target.id] < 30 && guildMember.roles.cache.has(trustedRole.id)) {
+        await guildMember.roles.remove(trustedRole);
+      } else {
+        message.reply(`✅ Reputasi ${target.username} sekarang **${repData[target.id]}**`);
+      }
+    } else {
+      message.reply(`✅ Reputasi ${target.username} sekarang **${repData[target.id]}**`);
+    }
+  }
+
+  // !rep
+  if (message.content.startsWith("!rep")) {
+    const target = message.mentions.users.first() || message.author;
+    const rep = repData[target.id] || 0;
+    return message.reply(`📊 Reputasi ${target.username}: **${rep}**`);
+  }
+
+  // !leaderboard
+  if (message.content.startsWith("!leaderboard")) {
+    if (Object.keys(repData).length === 0) return message.reply("📊 Belum ada data reputasi.");
+    const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const leaderboard = await Promise.all(
+      sorted.map(async ([id, rep], i) => {
+        const user = await client.users.fetch(id);
+        return `${i + 1}. **${user.username}** - ${rep} rep`;
+      })
+    );
+    message.reply(`🏆 **Top 5 Reputasi:**\n${leaderboard.join("\n")}`);
+  }
 });
 
 client.login(token);
