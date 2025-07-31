@@ -7,7 +7,8 @@ const {
   Partials,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder
+  StringSelectMenuOptionBuilder,
+  AttachmentBuilder
 } = require("discord.js");
 require("dotenv").config();
 
@@ -167,10 +168,10 @@ client.on(Events.MessageCreate, async (message) => {
     return message.reply(`📊 Reputasi ${target.username}: **${rep}**`);
   }
 
-  // !board (leaderboard top 50)
+  // !board (top 50)
   if (message.content.startsWith("!board")) {
     if (Object.keys(repData).length === 0) return message.reply("📊 Belum ada data reputasi.");
-    const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 50); // tampilkan 50 teratas
+    const sorted = Object.entries(repData).sort((a, b) => b[1] - a[1]).slice(0, 50);
     const leaderboard = await Promise.all(
       sorted.map(async ([id, rep], i) => {
         const user = await client.users.fetch(id);
@@ -178,6 +179,13 @@ client.on(Events.MessageCreate, async (message) => {
       })
     );
     message.reply(`🏆 **Top 50 Reputasi:**\n${leaderboard.join("\n")}`);
+  }
+
+  // !replist (download data reputasi lengkap)
+  if (message.content.startsWith("!replist")) {
+    if (Object.keys(repData).length === 0) return message.reply("📊 Belum ada data reputasi.");
+    const attachment = new AttachmentBuilder(repFile);
+    message.reply({ content: "📥 **Daftar lengkap reputasi:**", files: [attachment] });
   }
 });
 
