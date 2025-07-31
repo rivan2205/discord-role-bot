@@ -1,50 +1,108 @@
-const express = require("express");
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => res.send('Bot Aktif!'));
+app.listen(3000, () => console.log('🌐 Web server aktif untuk anti-sleep'));
+
 const {
   Client,
   GatewayIntentBits,
-  Events,
-  Partials,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder
-} = require("discord.js");
-require("dotenv").config();
+  StringSelectMenuOptionBuilder,
+  Events,
+  Partials
+} = require('discord.js');
 
-// Load ENV
+require('dotenv').config();
+
 const token = process.env.DISCORD_TOKEN;
-const channelId = process.env.CHANNEL_ID; // channel untuk dropdown
+const channelId = process.env.CHANNEL_ID;
 
-// Express untuk anti-sleep (Railway/hosting gratis)
-const app = express();
-app.get("/", (req, res) => res.send("Bot Aktif!"));
-app.listen(3000, () => console.log("🌐 Web server aktif untuk anti-sleep"));
-
-// Client Discord
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  partials: [Partials.Channel]
-});
-
-// Data dropdown role (bisa disesuaikan)
+// Data roles per kategori (ringkas)
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
-  { label: "⛈️ Thunder", roleName: "Thunder" }
+  { label: "⛈️ Thunder", roleName: "Thunder" },
+  { label: "☄️ Meteor Shower", roleName: "meteor shower" },
+  { label: "🔴 Bloodmoon", roleName: "bloodmoon" },
+  { label: "🔵 Night", roleName: "night" },
+  { label: "💨 Windy", roleName: "windy" },
+  { label: "🌡️ Heatwave", roleName: "heatwave" },
+  { label: "🌪️ Tornado", roleName: "tornado" },
+  { label: "🍫🌧️ Chocolate Rain", roleName: "chocolate rain" },
+  { label: "Aurora Event", roleName: "Aurora event" },
+  { label: "🌦️ Tropical Rain", roleName: "tropicalrain" },
+  { label: "🌪️ Sandstorm", roleName: "sandstorm" },
+  { label: "👑 Admin Abuse", roleName: "adminabuse" },
+  { label: "💠 Zenaura", roleName: "zenaura" },
+  { label: "💎 Crystalbeam", roleName: "crystalbeam" },
+  { label: "💥 Corrupt Zenaura", roleName: "corruptzenaura" },
 ];
-const seedRoles = [{ label: "🍉 Watermelon", roleName: "Watermelon" }];
-const gearRoles = [{ label: "💦 Master Sprinkler", roleName: "Master Sprinkler" }];
-const merchantRoles = [{ label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" }];
-const eventRoles = [{ label: "🎉 Event Ping", roleName: "event" }];
 
-// Client ready → kirim dropdown ke channel
+const seedRoles = [
+  { label: "🍉 Watermelon", roleName: "Watermelon" },
+  { label: "🎃 Pumpkin", roleName: "pumpkin" },
+  { label: "🍎 Apple", roleName: "Apple" },
+  { label: "🎋 Bamboo", roleName: "bamboo" },
+  { label: "🥥 Coconut", roleName: "coconut" },
+  { label: "🌵 Cactus", roleName: "cactus" },
+  { label: "🍠 Dragonfruit", roleName: "dragonfruit" },
+  { label: "🥭 Mango", roleName: "mango" },
+  { label: "🍇 Grape", roleName: "grape" },
+  { label: "🍄 Mushroom", roleName: "mushroom" },
+  { label: "🌶️ Bell Pepper", roleName: "bell pepper" },
+  { label: "🟤 Cacao", roleName: "cacao" },
+  { label: "🥒 Beanstalk", roleName: "beanstalk" },
+  { label: "🏵️ Emberlily", roleName: "emberlily" },
+  { label: "🍎 Sugar Apple", roleName: "sugar apple" },
+  { label: "🏵️ Burningbud", roleName: "burningbud" },
+  { label: "🌲 Giant Pinecone", roleName: "giantpinecone" },
+  { label: "🍓 Elderstrawberry", roleName: "elderstrawberry" },
+];
+
+const gearRoles = [
+  { label: "💦 Master Sprinkler", roleName: "Master Sprinkler" },
+  { label: "💦 Advanced Sprinkler", roleName: "Advanced Sprinkler" },
+  { label: "💦 Godly Sprinkler", roleName: "Godly Sprinkler" },
+  { label: "🚿 Wateringcan", roleName: "wateringcan" },
+  { label: "⛏️ Trowel", roleName: "trowel" },
+  { label: "💦 Basic Sprinkler", roleName: "basic sprinkler" },
+  { label: "Friendship Pot", roleName: "Friendship pot" },
+  { label: "❤️ Favorite Tool", roleName: "favorite tool" },
+  { label: "🪞 Tanning Mirror", roleName: "tanning mirror" },
+  { label: "Cleaning Spray", roleName: "Cleaning spray" },
+  { label: "🔎 Magnifying Glass", roleName: "magnify glass" },
+  { label: "🧸 Medium Toy", roleName: "mediumtoy" },
+  { label: "🦴 Medium Treat", roleName: "mediumtreat" },
+  { label: "🍭 Level Up Lollipop", roleName: "leveluplollipop" },
+  { label: "🔧 Recall Wrench", roleName: "recallwrench" },
+];
+
+const merchantRoles = [
+  { label: "🧙‍♂️ Traveling Merchant", roleName: "traveling merchant" },
+];
+
+const eventRoles = [
+  { label: "🎉 Event Ping", roleName: "event" },
+];
+
+// Client
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  partials: [Partials.Channel],
+});
+
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot aktif sebagai ${client.user.tag}`);
 
   try {
     const channel = await client.channels.fetch(channelId);
-    if (!channel) return console.log("❌ Channel dropdown tidak ditemukan!");
+    if (!channel) {
+      console.error("❌ Channel tidak ditemukan!");
+      return;
+    }
 
-    // Buat komponen dropdown
+    // Buat dropdown per kategori
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
         .setCustomId(id)
@@ -59,11 +117,10 @@ client.once(Events.ClientReady, async () => {
             .setValue(role.roleName)
         )
       );
-
       return new ActionRowBuilder().addComponents(menu);
     };
 
-    // Kirim dropdown
+    // Kirim dropdown 5 kategori
     await channel.send({
       content: "**Pilih role sesuai kategori:**",
       components: [
@@ -71,36 +128,34 @@ client.once(Events.ClientReady, async () => {
         makeDropdown("select_seed", "🌱 Seed", seedRoles),
         makeDropdown("select_gear", "⚙️ Gear", gearRoles),
         makeDropdown("select_merchant", "🧙‍♂️ Merchant", merchantRoles),
-        makeDropdown("select_event", "🎉 Event", eventRoles)
-      ]
+        makeDropdown("select_event", "🎉 Event", eventRoles),
+      ],
     });
 
-    console.log("✅ Dropdown role terkirim!");
+    console.log("✅ Dropdown role sudah dikirim!");
   } catch (err) {
-    console.log("❌ Error kirim dropdown:", err.message);
+    console.error("❌ Error kirim dropdown:", err.message);
   }
 });
 
-// Handle interaksi dropdown
+// Handler role saat user pilih menu
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
 
-  const roles = {
-    select_weather: weatherRoles,
-    select_seed: seedRoles,
-    select_gear: gearRoles,
-    select_merchant: merchantRoles,
-    select_event: eventRoles
-  }[interaction.customId];
-
-  if (!roles) return;
+  let roles = [];
+  if (interaction.customId === "select_weather") roles = weatherRoles;
+  if (interaction.customId === "select_seed") roles = seedRoles;
+  if (interaction.customId === "select_gear") roles = gearRoles;
+  if (interaction.customId === "select_merchant") roles = merchantRoles;
+  if (interaction.customId === "select_event") roles = eventRoles;
 
   const member = interaction.member;
   const selected = interaction.values;
 
-  // Atur role sesuai pilihan
   for (const roleObj of roles) {
-    const role = interaction.guild.roles.cache.find((r) => r.name === roleObj.roleName);
+    const role = interaction.guild.roles.cache.find(
+      (r) => r.name === roleObj.roleName
+    );
     if (!role) continue;
 
     if (selected.includes(roleObj.roleName)) {
@@ -110,7 +165,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  await interaction.reply({ content: "✅ Role kamu diperbarui!", flags: 64 });
+  await interaction.reply({
+    content: "✅ Role kamu diperbarui!",
+    flags: 64, // ephemeral
+  });
 });
 
 client.login(token);
