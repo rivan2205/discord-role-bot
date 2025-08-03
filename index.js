@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot Aktif!'));
@@ -18,7 +19,6 @@ require('dotenv').config();
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 
-// Daftar Role
 const weatherRoles = [
   { label: "🌧️ Rain", roleName: "Rain" },
   { label: "❄️ Snowing", roleName: "Snowing" },
@@ -86,7 +86,6 @@ const eventRoles = [
   { label: "🎉 Event Ping", roleName: "Event Ping" }
 ];
 
-// Client Discord
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   partials: [Partials.Channel]
@@ -94,13 +93,9 @@ const client = new Client({
 
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot aktif sebagai ${client.user.tag}`);
-
   try {
     const channel = await client.channels.fetch(channelId);
-    if (!channel) {
-      console.error("❌ Channel tidak ditemukan!");
-      return;
-    }
+    if (!channel) return console.error("❌ Channel tidak ditemukan!");
 
     const makeDropdown = (id, placeholder, roles) => {
       const menu = new StringSelectMenuBuilder()
@@ -109,13 +104,14 @@ client.once(Events.ClientReady, async () => {
         .setMinValues(0)
         .setMaxValues(roles.length);
 
-      roles.forEach((role) =>
+      roles.forEach(role =>
         menu.addOptions(
           new StringSelectMenuOptionBuilder()
             .setLabel(role.label)
             .setValue(role.roleName)
         )
       );
+
       return new ActionRowBuilder().addComponents(menu);
     };
 
@@ -142,19 +138,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await interaction.deferReply({ ephemeral: true });
 
-    let roles = [];
-    if (interaction.customId === "select_weather") roles = weatherRoles;
-    if (interaction.customId === "select_seed") roles = seedRoles;
-    if (interaction.customId === "select_gear") roles = gearRoles;
-    if (interaction.customId === "select_merchant") roles = merchantRoles;
-    if (interaction.customId === "select_event") roles = eventRoles;
+    const roleMap = {
+      select_weather: weatherRoles,
+      select_seed: seedRoles,
+      select_gear: gearRoles,
+      select_merchant: merchantRoles,
+      select_event: eventRoles
+    };
+
+    const roles = roleMap[interaction.customId];
+    if (!roles) return;
 
     const member = interaction.member;
     const selected = interaction.values;
 
-    for (const roleObj of roles) {
-      const role = interaction.guild.roles.cache.find((r) => r.name === roleObj.roleName);
-      if (!role) continue;
+    const tasks = roles.map(async (roleObj) => {
+      const role = interaction.guild.roles.cache.find(r => r.name === roleObj.roleName);
+      if (!role) return;
 
       try {
         if (selected.includes(roleObj.roleName)) {
@@ -162,11 +162,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
         } else {
           if (member.roles.cache.has(role.id)) await member.roles.remove(role);
         }
-      } catch (roleErr) {
-        console.error(`❌ Gagal atur role ${roleObj.roleName}:`, roleErr.message);
+      } catch (err) {
+        console.error(`❌ Gagal set role ${roleObj.roleName}:`, err.message);
       }
-    }
+    });
 
+    await Promise.all(tasks);
     await interaction.editReply("✅ Role kamu berhasil diperbarui!");
   } catch (err) {
     console.error("❌ Gagal proses interaksi:", err.message);
